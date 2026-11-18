@@ -3,7 +3,7 @@
  "qualified": [],
  "summary": "No meme rotation strategy passed every gate; nothing to paper-trade as a live candidate.",
  "variants_tried": 58,
- "holdout_run": false,
+ "holdout_run": true,
  "best_by_gates": "R3",
  "strategies": {
   "R1": {
@@ -13,7 +13,7 @@
    "reasons": [
     "<50 dev-OOS trades (47)",
     "not robust to nearby parameters (25% of neighbours positive)",
-    "holdout not run yet"
+    "holdout not positive after costs (-10.2%, 15 trades)"
    ],
    "dev_oos": {
     "trades": 47,
@@ -25,9 +25,9 @@
    "dev_oos_2x_total_return": 0.10890789888487595,
    "wf_total_R": 48.84726796821117,
    "wf_total_return": 0.47414766773593087,
-   "holdout_total_return": null,
-   "holdout_2x_total_return": null,
-   "holdout_trades": null,
+   "holdout_total_return": -0.10189713464488648,
+   "holdout_2x_total_return": -0.10484568069003819,
+   "holdout_trades": 15,
    "r4_base": null
   },
   "R2": {
@@ -39,7 +39,7 @@
     "does not beat BTC buy-and-hold",
     "walk-forward not positive",
     "not positive at double costs without the best coin (PENGUUSDT)",
-    "holdout not run yet"
+    "holdout not positive after costs (-19.0%, 91 trades)"
    ],
    "dev_oos": {
     "trades": 323,
@@ -51,9 +51,9 @@
    "dev_oos_2x_total_return": -0.12468630010460657,
    "wf_total_R": 9.924769342626014,
    "wf_total_return": -0.018935824563177217,
-   "holdout_total_return": null,
-   "holdout_2x_total_return": null,
-   "holdout_trades": null,
+   "holdout_total_return": -0.190259516544811,
+   "holdout_2x_total_return": -0.1716508238740444,
+   "holdout_trades": 91,
    "r4_base": null
   },
   "R3": {
@@ -61,7 +61,7 @@
    "default": "L=14|z=4.0",
    "status": "NOT_QUALIFIED",
    "reasons": [
-    "holdout not run yet"
+    "holdout not positive after costs (-5.0%, 42 trades)"
    ],
    "dev_oos": {
     "trades": 168,
@@ -73,9 +73,9 @@
    "dev_oos_2x_total_return": 0.3579129702518158,
    "wf_total_R": 37.55124631930834,
    "wf_total_return": 0.42295948030888897,
-   "holdout_total_return": null,
-   "holdout_2x_total_return": null,
-   "holdout_trades": null,
+   "holdout_total_return": -0.04971630735814592,
+   "holdout_2x_total_return": -0.06312617564499268,
+   "holdout_trades": 42,
    "r4_base": null
   },
   "R4": {
@@ -83,7 +83,7 @@
    "default": "v=0.005",
    "status": "NOT_QUALIFIED",
    "reasons": [
-    "holdout not run yet"
+    "holdout not positive after costs (-2.9%, 38 trades)"
    ],
    "dev_oos": {
     "trades": 152,
@@ -95,9 +95,9 @@
    "dev_oos_2x_total_return": 0.3816837025899864,
    "wf_total_R": 50.21332570451221,
    "wf_total_return": 0.45511677029606745,
-   "holdout_total_return": null,
-   "holdout_2x_total_return": null,
-   "holdout_trades": null,
+   "holdout_total_return": -0.029326402563820464,
+   "holdout_2x_total_return": -0.039044003531066185,
+   "holdout_trades": 38,
    "r4_base": "R3"
   },
   "R5": {
@@ -106,8 +106,7 @@
    "status": "NOT_QUALIFIED",
    "reasons": [
     "walk-forward not positive",
-    "not tradeable at EUR100 (min-notional skips)",
-    "holdout not run yet"
+    "not tradeable at EUR100 (min-notional skips)"
    ],
    "dev_oos": {
     "trades": 62,
@@ -119,9 +118,9 @@
    "dev_oos_2x_total_return": 0.10838133168248532,
    "wf_total_R": -9.614891482550691,
    "wf_total_return": -0.09469695510842047,
-   "holdout_total_return": null,
-   "holdout_2x_total_return": null,
-   "holdout_trades": null,
+   "holdout_total_return": 0.04433263554449973,
+   "holdout_2x_total_return": 0.037659992551851706,
+   "holdout_trades": 29,
    "r4_base": null
   }
  },
@@ -130,6 +129,10 @@
   "btc_spot_cagr": 0.05529919948980844,
   "meme_basket_cagr": -0.6249317794023916
  },
- "benchmarks_holdout": null,
+ "benchmarks_holdout": {
+  "btc_perp_total": -0.008804947295872778,
+  "btc_spot_total": 0.014733024268806183,
+  "meme_basket_total": -0.03581375709539425
+ },
  "note": "PAPER ONLY. Source: research/lab/meme_rotation/dev_results.json, holdout.json; code src/lab/rotation.py; design research/lab/meme_rotation/DESIGN.md."
 }

@@ -82,7 +82,7 @@ def main():
         wf = S[sid]["wf"] if d else None
         h = ho["strategies"][sid] if (ho and d) else None
         L.append("| {} | {}{} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
-            sid, v["params"], " **(default)**" if d else "", v["oos_trades"], r_(v["oos_exp_R"]),
+            sid, v["params"].replace("|", ", "), " **(default)**" if d else "", v["oos_trades"], r_(v["oos_exp_R"]),
             pct(v["oos_total_return"]),
             f"{wf['total_R']:+.1f}R / {pct(wf['total_return'])}" if wf else "",
             pct(v["oos_2x_total_return"]),

@@ -58,3 +58,15 @@
    month completes. FORGE's paper bot must run where the live API is permitted.
 5. **Hype/news edge is untested with real news.** Only exchange-data proxies exist. A real test
    needs a historical social/news archive (none free); tell LAB if one becomes available.
+
+## LAB meme rotation - 2026-11-18
+
+1. **Meme minimum notional is the owner's default 5 USDT** (exchangeInfo default; BTC 50 USDT /
+   0.001 BTC, ETH 20). The memes' own `MIN_NOTIONAL` / `LOT_SIZE` filters were not exported, so
+   for memes it is an ESTIMATE. At EUR100 with 1% risk, 24-57% of rotation entries fell below
+   5 USDT (`research/lab/meme_rotation/REPORT.md`). Please export the meme filters if available.
+2. **No rotation strategy qualified.** R3/R4 passed development and lost in the one-shot holdout
+   (2026-05..2026-10). R5 (short the faders) was positive in the holdout but had failed
+   development; LAB will not promote it on holdout evidence. A fresh, untouched period (e.g.
+   2026-11 onwards, paper-tracked without trading) is the only clean way to re-test R3 or R5.
+   **Owner: do you want LAB to paper-track R3 and R5 forward as an observation only?**
