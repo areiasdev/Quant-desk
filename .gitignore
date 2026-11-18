@@ -3,3 +3,7 @@ __pycache__/
 .venv/
 *.pyc
 .env
+# cleaned parquet is > 50MB in total: regenerate with `cd src && ../.venv/bin/python -m radar.run_nightly`
+data/clean/
+*.part
+.pytest_cache/
