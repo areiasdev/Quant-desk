@@ -14,3 +14,5 @@ HALT
 dashboard.html
 dashboard.tmp
 .state.*.tmp
+# Telegram token: never commit
+telegram.yaml

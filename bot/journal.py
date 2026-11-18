@@ -37,6 +37,7 @@ class Journal:
     def __init__(self, logs_dir: Path):
         self.dir = Path(logs_dir)
         self.dir.mkdir(parents=True, exist_ok=True)
+        self.on_append = None   # optional hook(name, rec), e.g. Telegram; must not raise
 
     def path(self, name: str) -> Path:
         assert name in NAMES, name
@@ -49,6 +50,11 @@ class Journal:
             if fsync:
                 f.flush()
                 os.fsync(f.fileno())
+        if self.on_append is not None:
+            try:
+                self.on_append(name, rec)
+            except Exception:  # noqa: BLE001  a notification must never stop the bot
+                pass
 
     def read(self, name: str) -> list[dict]:
         return read_jsonl(self.path(name))

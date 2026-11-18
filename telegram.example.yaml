@@ -1,0 +1,9 @@
+# Copia este ficheiro para telegram.yaml (esse NUNCA vai para o GitHub) e preenche.
+# 1) No Telegram fala com @BotFather, envia /newbot e segue os passos: dá-te um token.
+# 2) Cola o token abaixo, abre o teu bot no Telegram e carrega em Start.
+# 3) Corre: .\.venv\Scripts\python.exe -m bot.notify --find-chat   e cola o chat_id abaixo.
+# 4) Teste: .\.venv\Scripts\python.exe -m bot.notify --test
+# 5) Reinicia o bot (fecha a janela do run_bot.ps1 e arranca outra vez).
+bot_token: "COLA_AQUI_O_TOKEN"
+chat_id: "COLA_AQUI_O_CHAT_ID"
+notify_blocks: false   # true = também avisa quando o Shield bloqueia uma trade
