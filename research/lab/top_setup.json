@@ -1,0 +1,215 @@
+{
+  "id": "S16",
+  "name": "Paid to hold: negative funding in an uptrend",
+  "status": "QUALIFIED",
+  "status_note": "Passed every LAB gate on out-of-sample data. PAPER TRADING ONLY (RULES.md): do not go live until the owner says 'go live'.",
+  "failed_gates": [],
+  "warnings": [
+    "OOS year 2 (2025-11..2026-10) expectancy only +0.051R vs +0.442R in year 1: the edge was much weaker in the last 12 months.",
+    "Long-only: OOS bear-month expectancy -0.314R.",
+    "Walk-forward profit leans on one test quarter (2025-05..2025-07: +61.0R); 6 of 12 test quarters lost money.",
+    "At EUR100 most BTCUSDT signals are below the ESTIMATE $100 minimum notional (13% of OOS trades not placeable).",
+    "Minimum notional / lot size / leverage tiers are ESTIMATES: verify from exchangeInfo before any live order."
+  ],
+  "venue": "Binance USDT-M perpetual futures",
+  "universe": {
+    "rule": "Each calendar month M (00:00 UTC on day 1): rank Binance USDT-M perpetuals by the sum of 1h quote volume over [M - 30 days, M). Keep the top 10.",
+    "include_only": "crypto underlyings (exclude TradFi stock/ETF/commodity, index and stablecoin perps)",
+    "must_be_trading": "the symbol's last bar with trades > 0 opened within the 24h before M",
+    "membership_needed_for": "new entries only (entry bar's month); open positions may run past month end",
+    "renamed_contracts": "separate symbols (e.g. MATICUSDT and POLUSDT are not stitched)",
+    "reference_implementation": "src/radar/universe.py; data/universe_by_month.csv"
+  },
+  "timeframe": "4h bars anchored at 00/04/08/12/16/20 UTC built from four complete 1h bars; act only on CLOSED bars",
+  "indicators": {
+    "SMA_fast": "simple mean of the last 50 4h closes (incl. bar t)",
+    "SMA_slow": "simple mean of the last 200 4h closes (incl. bar t)",
+    "ATR14": "simple mean of the last 14 true ranges, TR = max(high-low, |high-prev close|, |low-prev close|)",
+    "F8": "latest SETTLED funding rate x 8 / funding_interval_hours of that settlement, as known at the bar close (a settlement is usable from the first bar whose close is after its calc time); no predicted funding"
+  },
+  "entry": {
+    "side": "long only",
+    "condition": "at 4h close t: close > SMA_fast > SMA_slow AND F8 < 0",
+    "leg_rule": "one signal per uptrend leg: after a signal, disarm until a 4h close < SMA_fast; a signal is consumed even if no order is placed",
+    "order": "market (taker) at the open of bar t+1",
+    "skip_if": [
+      "symbol not in the universe for the entry bar's month",
+      "bar t or bar t+1 has trades == 0",
+      "any input is NaN",
+      "a position in this symbol is already open",
+      "stop would already be at/above the entry price"
+    ]
+  },
+  "stop": {
+    "type": "fixed stop-market",
+    "price": "entry_fill_reference - 2.0 x ATR14 at bar t (entry reference = bar t+1 open)",
+    "gap_rule": "if a bar opens below the stop, exit at that open"
+  },
+  "exits": [
+    "4h close < SMA_fast -> market exit at the next 4h open",
+    "first funding settlement with F8 > 0.0001 (= 0.01% per 8h) seen at a 4h close -> market exit at the next 4h open",
+    "no profit target, no time stop",
+    "delisting announced/contract stops: close immediately (backtest: last real trade -2%, ESTIMATE)"
+  ],
+  "params": {
+    "fast": 50,
+    "atr": 2.0,
+    "fexit": 0.0001
+  },
+  "param_grid_tested": {
+    "fast": [
+      30,
+      50,
+      80
+    ],
+    "atr": [
+      1.5,
+      2.0,
+      3.0
+    ],
+    "fexit": [
+      0.0001,
+      0.0002,
+      0.0005
+    ]
+  },
+  "sizing": {
+    "risk_per_trade": 0.01,
+    "account_eur": 100,
+    "account_usd_approx": 110,
+    "notional": "risk_per_trade x equity / (|entry - stop| / entry)",
+    "max_total_open_notional_x_equity": 3.0,
+    "min_notional_usdt_ESTIMATE": {
+      "BTCUSDT": 100,
+      "ETHUSDT": 20,
+      "default": 5
+    },
+    "if_below_min_notional": "skip the trade (do not round up the risk)",
+    "median_position_notional_usd_at_eur100": 23.69,
+    "median_stop_distance_pct": 4.64
+  },
+  "cost_assumptions": {
+    "taker": 0.0005,
+    "maker": 0.0002,
+    "slippage_bp": {
+      "BTCUSDT": 1,
+      "ETHUSDT": 1,
+      "other_core": 3,
+      "memes": 10
+    },
+    "funding": "real settlements while held (long pays positive rate)"
+  },
+  "backtest": {
+    "data": "data.binance.vision archive (data/MANIFEST.csv); window 2022-11-01 .. 2026-10-31 23:59 UTC; delisted symbols included",
+    "oos_window": "2024-11-01 .. 2026-10-31",
+    "oos": {
+      "trades": 254,
+      "win_rate": 0.2440944881889764,
+      "exp_R": 0.20773745989244802,
+      "pf": 1.5201557291760173,
+      "cagr": 0.22601116396331022,
+      "max_dd": 0.2555272250384494,
+      "worst_month": -0.07968667049232388,
+      "worst_month_id": "2026-01",
+      "losing_streak": 13,
+      "exposure": 0.41883561643835615
+    },
+    "oos_double_fees_and_slippage": {
+      "exp_R": 0.1674999375279103,
+      "cagr": 0.1667438273521029
+    },
+    "oos_tradeable_at_eur100_ESTIMATE": {
+      "trades": 221,
+      "exp_R": 0.21731952579760064,
+      "total_R": 48.02761520126974,
+      "cagr": 0.20159465750715677,
+      "max_dd": 0.2176586705445005,
+      "losing_streak": 16,
+      "worst_month": -0.057702684635287334
+    },
+    "oos_by_year": {
+      "2024-11..2025-10": {
+        "trades": 102,
+        "exp_R": 0.44177009193392097,
+        "cagr": 0.43763108536859896,
+        "max_dd": 0.12392053719586038,
+        "bh_btc_spot": 0.5560711915355487,
+        "bh_btc_perp": 0.4585247271820707
+      },
+      "2025-11..2026-10": {
+        "trades": 152,
+        "exp_R": 0.05068924628567008,
+        "cagr": 0.04554178708321799,
+        "max_dd": 0.1736057341982472,
+        "bh_btc_spot": -0.29324946867900104,
+        "bh_btc_perp": -0.3185357220354703
+      }
+    },
+    "walk_forward_oos": {
+      "trades": 269,
+      "total_R": 59.54720275989686,
+      "exp_R": 0.2213650660219214,
+      "cagr": 0.2554091455813441,
+      "max_dd": 0.3186895329895745
+    },
+    "in_sample": {
+      "trades": 154,
+      "exp_R": 0.6144084689305513,
+      "cagr": 0.49340468475352717
+    },
+    "btc_buy_hold_oos": {
+      "perp_cagr": -0.018188911276571518,
+      "spot_like_cagr": 0.04935529078220213
+    },
+    "monte_carlo": {
+      "shuffle_dd_p95": 0.23965780936731185,
+      "shuffle_dd_median": 0.15599035050634064,
+      "shuffle_p_ruin": 0.0,
+      "shuffle_final_p5": 1.5949804220054782,
+      "shuffle_final_median": 1.59498042200548,
+      "bootstrap_dd_p95": 0.280181618928564,
+      "bootstrap_dd_median": 0.15984587785629645,
+      "bootstrap_p_ruin": 0.0,
+      "bootstrap_final_p5": 0.9328716778790422,
+      "bootstrap_final_median": 1.5497324536394532
+    },
+    "regimes": {
+      "bull": {
+        "trades": 137,
+        "exp_R": 0.4750281162445424,
+        "total_R": 65.0788519255023,
+        "months": 10
+      },
+      "bear": {
+        "trades": 50,
+        "exp_R": -0.31399230911801335,
+        "total_R": -15.699615455900668,
+        "months": 6
+      },
+      "sideways": {
+        "trades": 67,
+        "exp_R": 0.050538482732539664,
+        "total_R": 3.3860783430801575,
+        "months": 7
+      }
+    },
+    "robust_neighbour_positive_share": 1.0,
+    "score": {
+      "profit": 4,
+      "drawdown": 3,
+      "trades": 4,
+      "streak": 3,
+      "bear_sideways": 2,
+      "total": 16
+    }
+  },
+  "monitoring": {
+    "weakening": "rolling 12-month expectancy < +0.05R after costs, or losing streak > 15, or drawdown > 28% (Monte Carlo 95th pct)",
+    "kill": "drawdown > 30% of peak equity, or rolling 100-trade expectancy < 0 after costs"
+  },
+  "source": {
+    "code": "src/lab/",
+    "card": "research/cards/S16.md",
+    "results": "research/lab/full/S16.json"
+  }
+}

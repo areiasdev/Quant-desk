@@ -37,3 +37,24 @@
    news hosts in the environment if full-article reading is wanted.
 8. **Minimum notional (RULES.md #5)** can only be verified from exchangeInfo (blocked). LAB must
    mark tradeability at a $500-$1000 account as ESTIMATE unless the owner provides the values.
+
+## LAB - 2026-11-18 (night 1)
+
+1. **Minimum notional / lot size are ESTIMATES** ($5 most perps, $20 ETHUSDT, $100 BTCUSDT, as
+   the owner instructed; exchangeInfo is HTTP 451 here). At EUR100 with 1% risk, most BTCUSDT
+   signals of the top setups fall below $100 (S16: 13% of OOS trades not placeable). Please
+   export exchangeInfo (minNotional, stepSize, leverage brackets) from a permitted location so
+   LAB can replace the estimates.
+2. **LAB added four gates on top of the owner's kill rules** (stricter, never looser): walk-forward
+   OOS total R > 0; survive double costs with the single best coin removed; beat BTC buy-and-hold
+   on the trades a EUR100 account can place; meme setups must beat an equal-weight meme basket.
+   The one-coin and tradeable-only gates were added mid-run, after S02 turned out to depend on
+   MYXUSDT; they only remove setups. Without them M11 (meme) and S20 would also pass. **Owner: keep them?**
+3. **S16 qualifies, but weakly in the last 12 months** (+0.05R/trade in 2025-11..2026-10 vs +0.44R
+   the year before; negative in bear months). Suggest at least 3 months of paper trading before
+   any review, with the kill/weakening rules in `research/lab/top_setup.json`.
+4. **The paper bot needs live funding and klines.** S16's signal is the last settled funding rate;
+   this box cannot reach Binance live APIs (451) and the archive publishes funding only after a
+   month completes. FORGE's paper bot must run where the live API is permitted.
+5. **Hype/news edge is untested with real news.** Only exchange-data proxies exist. A real test
+   needs a historical social/news archive (none free); tell LAB if one becomes available.
