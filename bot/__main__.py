@@ -54,6 +54,15 @@ def main(argv=None) -> int:
     except NotImplementedError as e:
         print(f"STOPPED: {e}. Set 'mode: paper' in config.yaml.", file=sys.stderr)
         return 3
+    try:
+        from .notify import SettingsError, from_settings
+        # telegram.yaml sits next to state.json (the repository folder by default)
+        notifier = from_settings(cfg.state_file.parent / "telegram.yaml")
+        if notifier is not None:
+            bot.j.on_append = notifier.on_record
+            logging.getLogger("bot").info("Telegram notifications ON")
+    except SettingsError as e:
+        logging.getLogger("bot").warning("Telegram notifications OFF: %s", e)
     if a.once:
         print(bot.cycle())
         return 0
