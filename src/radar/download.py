@@ -53,13 +53,24 @@ def funding_keys(sym: str) -> list[str]:
             if _month_of(k) >= _ym(WINDOW_START)]
 
 
-def metrics_keys(sym: str, wanted_months: set[str] | None) -> list[str]:
-    """Daily metrics zips for a symbol; restricted to wanted months (None = whole window)."""
-    keys = [k for k in list_zip_keys(f"{UM}/daily/metrics/{sym}/")
-            if _month_of(k) >= _ym(WINDOW_START)]
+def _day_of(key: str) -> str:
+    m = re.search(r"-(\d{4}-\d{2}-\d{2})\.zip$", key)
+    return m.group(1) if m else ""
+
+
+def metrics_keys(sym: str, wanted_months: set[str] | None) -> tuple[list[str], dict]:
+    """Daily metrics zips for a symbol (restricted to wanted months; None = whole window), plus
+    the archive's own first/last metrics day for the symbol (including pre-window history)."""
+    all_keys = list_zip_keys(f"{UM}/daily/metrics/{sym}/")
+    days = sorted(d for k in all_keys if (d := _day_of(k)))
+    odd = [k.rsplit("/", 1)[-1] for k in all_keys if not _day_of(k)]  # e.g. "...-metrics-1993.zip"
+    span = {"symbol": sym, "archive_first_day": days[0] if days else "",
+            "archive_last_day": days[-1] if days else "", "archive_files": len(days),
+            "archive_misnamed_files": ";".join(odd)}
+    keys = [k for k in all_keys if _month_of(k) >= _ym(WINDOW_START)]
     if wanted_months is not None:
         keys = [k for k in keys if _month_of(k) in wanted_months]
-    return keys
+    return keys, span
 
 
 def research_sets() -> dict[str, list[str]]:
@@ -99,8 +110,11 @@ def download_funding(symbols: list[str]) -> None:
 
 def download_metrics(per_symbol_months: dict[str, set[str] | None]) -> None:
     items = list(per_symbol_months.items())
-    keys = parallel_map(lambda it: metrics_keys(it[0], it[1]), items)
-    fetch_many([k for ks in keys for k in ks], "metrics", workers=48)
+    res = parallel_map(lambda it: metrics_keys(it[0], it[1]), items)
+    out = DATA / "quality" / "metrics_archive_span.csv"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame([span for _, span in res]).to_csv(out, index=False)
+    fetch_many([k for ks, _ in res for k in ks], "metrics", workers=48)
 
 
 def main(stage: str) -> None:

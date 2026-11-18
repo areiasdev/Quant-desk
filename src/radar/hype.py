@@ -16,6 +16,8 @@ Output: data/clean/meme_hype_1h.parquet (all memes, all bars) and a latest snaps
 """
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -31,7 +33,8 @@ def add_hype(panel: pd.DataFrame, btc_close: pd.Series, listing_ts: pd.Timestamp
     qv24 = p["quote_volume"].rolling(H, min_periods=H).sum()
     # 30 previous daily volumes at the same hour: qv24 shifted by 1..30 days
     hist = np.column_stack([qv24.shift(H * k).to_numpy() for k in range(1, 31)])
-    with np.errstate(invalid="ignore", divide="ignore"):
+    with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN windows (new listings) -> NaN
         n = np.sum(~np.isnan(hist), axis=1)
         mu = np.nanmean(np.where(n[:, None] >= 20, hist, np.nan), axis=1)
         sd = np.nanstd(np.where(n[:, None] >= 20, hist, np.nan), axis=1, ddof=1)

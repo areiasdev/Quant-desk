@@ -96,8 +96,11 @@ def main() -> None:
     uni_first = uni.groupby("symbol")["month"].min()
     for s, mf in m_first_by.items():
         kf = k_first_by.get(s)
-        target = kf if s in memes else max(kf, (pd.Timestamp(uni_first.get(s, "2022-11") + "-01")
-                                                - pd.Timedelta(days=31)).date().isoformat())
+        # memes: whole window; universe symbols: from the 1st of the month before their first
+        # universe month (that is all that was requested)
+        first_req = (pd.Timestamp(uni_first.get(s, "2022-11") + "-01")
+                     - pd.DateOffset(months=1)).date().isoformat()
+        target = kf if s in memes else max(kf, first_req)
         if kf and mf > target:
             later.append((s, kf, mf))
     if later:
@@ -108,6 +111,40 @@ def main() -> None:
         for s, kf, mf in sorted(later, key=lambda x: x[2]):
             L.append(f"| {s} | {kf} | {mf} |")
         L.append("")
+    else:
+        L.append("Within the requested ranges, no symbol's metrics start later than its 1h "
+                 "klines.\n")
+    span_p = QUALITY / "metrics_archive_span.csv"
+    if span_p.exists():
+        span = pd.read_csv(span_p, dtype=str, keep_default_na=False).set_index("symbol")
+        listing = cls.set_index("symbol")
+        rows = []
+        for s, r in span.iterrows():
+            fm = listing.loc[s, "first_month"] if s in listing.index else ""
+            if isinstance(fm, str) and fm and r["archive_first_day"] and r["archive_first_day"][:7] > fm:
+                rows.append((s, fm, r["archive_first_day"]))
+        btc = span.loc["BTCUSDT"] if "BTCUSDT" in span.index else None
+        L.append("**Metrics start later than klines in the archive itself** (all history, from "
+                 "the S3 listing; `data/quality/metrics_archive_span.csv`): "
+                 + (f"BTCUSDT metrics begin {btc['archive_first_day']}, while its klines begin in "
+                    f"{listing.loc['BTCUSDT', 'first_month']}. " if btc is not None else "")
+                 + f"{len(rows)} of {len(span)} research symbols have a first metrics day after "
+                 "their listing month: "
+                 + ", ".join(f"{s} ({fd}, listed {fm})" for s, fm, fd in sorted(rows, key=lambda x: x[2])[:40])
+                 + (" ..." if len(rows) > 40 else "") + ". All of these begin before the research "
+                 "window (2022-11-01), so the window itself is not affected.\n")
+        odd = span[span["archive_misnamed_files"] != ""]
+        if len(odd):
+            L.append("**Misnamed files in the archive** (not date-stamped, never downloaded): "
+                     + ", ".join(f"{s}: {r['archive_misnamed_files']}" for s, r in odd.iterrows()) + ".\n")
+    k_last_by = kq.set_index("symbol")["last_bar"].str[:10]
+    m_last_by = mq_ok.set_index("symbol")["last"].str[:10]
+    early_end = [(s, m_last_by[s], k_last_by[s]) for s in m_last_by.index
+                 if s in memes and s in k_last_by.index and m_last_by[s] < k_last_by[s]]
+    if early_end:
+        L.append("**Metrics end before the last real 1h bar** (memes, whole window requested): "
+                 + ", ".join(f"{s} (metrics to {me}, klines to {ke})" for s, me, ke in early_end)
+                 + ". Not filled.\n")
     missing_m = sorted((research & (set(uni["symbol"]) | memes)) - set(mq_ok["symbol"]))
     if missing_m:
         L.append(f"**No metrics at all in the archive for:** {', '.join(missing_m)}.\n")
@@ -175,8 +212,19 @@ def main() -> None:
     common = allmiss.value_counts()
     L.append(f"- Missing settlements (a gap longer than the interval in force): "
              f"{int(fq['missing_funding_events'].sum())} in {len(det)} symbols. "
-             + "; ".join(f"before {k} UTC in {v} symbols" for k, v in common.head(3).items())
+             + "; ".join(f"{k.split('(')[0]} UTC ({k.split('(+')[1].rstrip(')')} missing just "
+                         f"before it) in {v} symbols" for k, v in common.head(3).items())
              + ". The rest are isolated (details in `data/quality/funding_summary.csv`).")
+    if "settlements_before_first_kline" in fq:
+        L.append(f"- Settlements before a contract's first 1h bar: "
+                 f"{int(fq['settlements_before_first_kline'].fillna(0).sum())} "
+                 f"(symbols: {', '.join(fq.loc[fq['settlements_before_first_kline'].fillna(0) > 0, 'symbol'])}); "
+                 "kept (a strategy cannot hold a position then).")
+        g = fq[fq["ghost_settlements_dropped_after_last_trade"].fillna(0) > 0]
+        L.append(f"- **Post-delisting ghost funding**: the archive keeps writing settlements after a "
+                 f"contract stops trading; {int(g['ghost_settlements_dropped_after_last_trade'].sum()):,} "
+                 "settlements after the last real 1h bar were dropped: "
+                 + ", ".join(f"{r['symbol']} ({int(r['ghost_settlements_dropped_after_last_trade'])})" for _, r in g.iterrows()) + ".")
     L.append(f"- Extreme rates kept as-is: {int(fq['abs_rate_ge_0p5pct'].sum())} settlements with "
              f"|rate| >= 0.5% per interval; min {fq['min_rate'].min():.4%}, max {fq['max_rate'].max():.4%}.")
     L.append(f"- **End date**: funding ends {fq['last'].max()[:16]} UTC (last complete month). "
@@ -200,7 +248,13 @@ def main() -> None:
     nan_cols = [c for c in mq_ok.columns if c.startswith("nan_")]
     L.append("- Empty values per column: " + ", ".join(
         f"{c[4:]}: {int(mq_ok[c].sum()):,}" for c in nan_cols) + ".")
-    L.append(f"- Zero open-interest rows: {int(mq_ok['zero_open_interest_rows'].sum()):,}; 5-minute OI "
+    L.append(f"- **Post-delisting ghost metrics**: the archive keeps writing about one row per day "
+             f"with open interest 0 after a delisting; "
+             f"{int(mq_ok['ghost_rows_dropped_after_last_trade'].sum()):,} such rows after the last "
+             "real 1h bar were dropped (same cut-off as the klines).")
+    L.append(f"- Open interest == 0 on a trading contract (a missing value written as 0, e.g. "
+             f"BTCUSDT 2023-06-06 11:20-...): {int(mq_ok['zero_open_interest_rows_set_nan'].sum()):,} "
+             "rows set to NaN so they cannot fake a -100% OI drop; 5-minute OI "
              f"jumps > 50%: {int(mq_ok['oi_5m_jumps_gt_50pct'].sum()):,} (flag only).")
     L.append("- Raw column names were renamed: sum_open_interest -> open_interest, "
              "sum_open_interest_value -> open_interest_value_usdt, count_toptrader_long_short_ratio "

@@ -189,6 +189,15 @@ def clean_funding(sym: str) -> dict:
     df["funding_time"] = df["calc_time"].dt.round("1min")
     df["funding_rate"] = pd.to_numeric(df["last_funding_rate"], errors="coerce")
     df["funding_interval_hours"] = pd.to_numeric(df["funding_interval_hours"], errors="coerce")
+    kp = CLEAN / "klines_1h" / f"{sym}.parquet"
+    st["ghost_settlements_dropped_after_last_trade"] = 0
+    if kp.exists():
+        k = pd.read_parquet(kp, columns=["open_time"])["open_time"]
+        st["settlements_before_first_kline"] = int((df["funding_time"] < k.min()).sum())
+        # the archive keeps writing funding rows after a delisting (e.g. MATICUSDT to 2026-10)
+        cut = k.max() + pd.Timedelta(hours=1)
+        st["ghost_settlements_dropped_after_last_trade"] = int((df["funding_time"] > cut).sum())
+        df = df[df["funding_time"] <= cut]
     st["rows"] = len(df)
     st["first"] = df["funding_time"].min().isoformat()
     st["last"] = df["funding_time"].max().isoformat()
@@ -230,13 +239,26 @@ def clean_metrics(sym: str) -> dict:
     st["duplicate_rows_dropped"] = int(df.duplicated("create_time").sum())
     df = df.drop_duplicates("create_time", keep="last")
     df = df[df["create_time"] >= pd.Timestamp(WINDOW_START, tz="UTC")]
+    # After a delisting the archive keeps writing ~1 metrics row/day with OI = 0 (and the odd stale
+    # value); drop rows after the last real 1h bar of the cleaned klines (ghost-trimmed above).
+    kp = CLEAN / "klines_1h" / f"{sym}.parquet"
+    st["ghost_rows_dropped_after_last_trade"] = 0
+    if kp.exists():
+        last_bar = pd.read_parquet(kp, columns=["open_time"])["open_time"].max()
+        cut = last_bar + pd.Timedelta(hours=1)
+        st["ghost_rows_dropped_after_last_trade"] = int((df["create_time"] > cut).sum())
+        df = df[df["create_time"] <= cut]
     st["rows"] = len(df)
     st["first"] = df["create_time"].min().isoformat()
     st["last"] = df["create_time"].max().isoformat()
     st["off_grid_rows"] = int((df["create_time"].dt.minute % 5 != 0).sum())
     for c in METRIC_RENAME.values():
         st[f"nan_{c}"] = int(df[c].isna().sum())
-    st["zero_open_interest_rows"] = int((df["open_interest"] == 0).sum())
+    # OI == 0 while the contract trades is a missing value written as 0 (e.g. BTCUSDT
+    # 2023-06-06 11:20); it would fake a -100% "OI drop", so it is set to NaN (not filled).
+    zero = df["open_interest"] == 0
+    st["zero_open_interest_rows_set_nan"] = int(zero.sum())
+    df.loc[zero, ["open_interest", "open_interest_value_usdt"]] = np.nan
     oi_chg = df["open_interest"].pct_change().abs()
     st["oi_5m_jumps_gt_50pct"] = int((oi_chg > 0.5).sum())
     # coverage: days in [first day, last day] whose file exists, and rows per day
@@ -270,11 +292,14 @@ def main(kinds: tuple[str, ...] = ("klines", "funding", "metrics")) -> None:
     sets = research_sets()
     research = sorted(set(sets["ever_universe"]) | set(sets["memes"]) | {"BTCUSDT"})
     QUALITY.mkdir(parents=True, exist_ok=True)
-    jobs = [(k, s) for k in kinds for s in research]
     results: dict[str, list[dict]] = {k: [] for k in kinds}
+    # klines first: funding/metrics cleaning uses the ghost-trimmed klines as the delisting cut-off
+    stages = [[k for k in kinds if k == "klines"], [k for k in kinds if k != "klines"]]
     with ProcessPoolExecutor(max_workers=min(8, os.cpu_count() or 2)) as ex:
-        for kind, res in ex.map(_run, jobs, chunksize=4):
-            results[kind].append(res)
+        for stage in stages:
+            jobs = [(k, s) for k in stage for s in research]
+            for kind, res in ex.map(_run, jobs, chunksize=4):
+                results[kind].append(res)
     if "klines" in kinds:
         r = [x for x in results["klines"] if "stats" in x]
         pd.DataFrame([x["stats"] for x in r]).to_csv(QUALITY / "klines_1h_summary.csv", index=False)
