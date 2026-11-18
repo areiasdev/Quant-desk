@@ -120,12 +120,20 @@ def test_live_mode_is_a_stub_that_refuses(tmp_path):
     assert not (tmp_path / "state.json").exists()
 
 
+# Files allowed to use .post( -- nothing else in bot/ may send data anywhere.
+POST_ALLOWED = {"notify.py"}
+
+
 def test_no_code_path_can_send_orders_or_use_keys():
     pat = re.compile(r"\.post\(|\.put\(|\.delete\(|/fapi/v1/order|/fapi/v1/batchOrders|"
                      r"X-MBX-APIKEY|['\"]signature['\"]|signature=|import hmac|"
                      r"/fapi/v1/leverage|os\.environ\[|getenv\(")
     for p in sorted((REPO / "bot").glob("*.py")):
         hits = [m.group(0) for m in pat.finditer(p.read_text(encoding="utf-8"))]
+        if p.name in POST_ALLOWED:
+            # Owner-approved exception (2026-11-18): notify.py may POST, but only to
+            # Telegram; test_post_exception_only_reaches_telegram enforces that.
+            hits = [h for h in hits if h != ".post("]
         assert not hits, (p.name, hits)
     from bot.datasource import ENDPOINTS
     assert set(ENDPOINTS) == {"/fapi/v1/exchangeInfo", "/fapi/v1/klines",
@@ -146,3 +154,35 @@ def test_requirements_pinned_and_minimal():
     lines = [x.strip() for x in (REPO / "requirements.txt").read_text().splitlines() if x.strip()]
     assert sorted(x.split("==")[0] for x in lines) == ["numpy", "pandas", "pyyaml", "requests"]
     assert all("==" in x for x in lines)
+
+
+def test_post_exception_only_reaches_telegram():
+    """The single .post( exception must stay narrow: Telegram only, never Binance."""
+    import re as _re
+
+    from bot import notify
+
+    src = (REPO / "bot" / "notify.py").read_text(encoding="utf-8")
+    hosts = set(_re.findall(r"https?://([A-Za-z0-9.-]+)", src))
+    assert hosts == {"api.telegram.org"}, hosts
+    assert notify.API.startswith("https://api.telegram.org/")
+    for banned in ("binance", "fapi", "/order", "datasource", "runner", "fills"):
+        assert banned not in src.lower(), banned
+    assert src.count(".post(") == 1          # one call site, in TelegramNotifier._deliver
+    assert POST_ALLOWED == {"notify.py"}
+
+    class Rec:
+        def __init__(self):
+            self.urls = []
+
+        def post(self, url, data=None, timeout=None):
+            self.urls.append(url)
+
+            class R:
+                status_code = 200
+                text = "{}"
+            return R()
+
+    rec = Rec()
+    notify.TelegramNotifier("123:abc", "42", session=rec, background=False).send("x")
+    assert rec.urls and all(u.startswith("https://api.telegram.org/bot") for u in rec.urls)

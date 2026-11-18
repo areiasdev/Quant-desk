@@ -278,3 +278,19 @@ simuladas:
 | `run_bot.ps1` e Agendador de Tarefas | não testados (não há Windows/PowerShell aqui); o `run_bot.sh` equivalente é testado | arranque no Windows, reinício após falha |
 | `open_dashboard.bat` | não testado (Windows) | duplo clique abre o navegador |
 | suspensão real do PC | simulada no replay (salto de relógio de 10 h) | comportamento do `time.sleep` do Windows após suspensão (o bot dorme em blocos de 60 s e relê o relógio) |
+
+
+## Notificações no telemóvel (Telegram, opcional)
+
+O bot pode mandar-te uma mensagem no Telegram quando abre ou fecha uma trade (simulação) e quando o Shield o para ou retoma.
+
+1. No Telegram, fala com **@BotFather**, envia `/newbot` e segue os passos. Recebes um **token**.
+2. Copia `telegram.example.yaml` para `telegram.yaml` e cola o token em `bot_token`. O `telegram.yaml` nunca vai para o GitHub. Não partilhes o token com ninguém, nem em chats.
+3. Abre o teu bot no Telegram e carrega em **Start**.
+4. Corre `.\.venv\Scripts\python.exe -m bot.notify --find-chat` e cola o número em `chat_id`.
+5. Corre `.\.venv\Scripts\python.exe -m bot.notify --test`. Deves receber uma mensagem.
+6. Reinicia o bot: fecha a janela do `run_bot.ps1` e arranca outra vez. No arranque aparece `Telegram notifications ON`.
+
+Se o Telegram falhar, o bot continua a negociar normalmente; a falha fica só registada em `logs/bot.log`.
+
+**Segurança:** o único ficheiro do bot autorizado a enviar dados para fora é `bot/notify.py`, e só para `api.telegram.org`. Os testes `test_no_code_path_can_send_orders_or_use_keys` e `test_post_exception_only_reaches_telegram` garantem isso.
