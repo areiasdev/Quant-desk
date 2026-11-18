@@ -1,0 +1,135 @@
+{
+ "status": "NOT_QUALIFIED",
+ "qualified": [],
+ "summary": "No meme rotation strategy passed every gate; nothing to paper-trade as a live candidate.",
+ "variants_tried": 58,
+ "holdout_run": false,
+ "best_by_gates": "R3",
+ "strategies": {
+  "R1": {
+   "name": "Cross-sectional meme momentum",
+   "default": "L=14|K=3|reb=weekly",
+   "status": "NOT_QUALIFIED",
+   "reasons": [
+    "<50 dev-OOS trades (47)",
+    "not robust to nearby parameters (25% of neighbours positive)",
+    "holdout not run yet"
+   ],
+   "dev_oos": {
+    "trades": 47,
+    "exp_R": 0.2734785983811783,
+    "total_return": 0.11968184996847908,
+    "cagr": 0.07855464876696172,
+    "max_dd_mtm": 0.11566153062925477
+   },
+   "dev_oos_2x_total_return": 0.10890789888487595,
+   "wf_total_R": 48.84726796821117,
+   "wf_total_return": 0.47414766773593087,
+   "holdout_total_return": null,
+   "holdout_2x_total_return": null,
+   "holdout_trades": null,
+   "r4_base": null
+  },
+  "R2": {
+   "name": "Edge-monitor rotation (owner's idea)",
+   "default": "N=10|theta=0.0",
+   "status": "NOT_QUALIFIED",
+   "reasons": [
+    "not positive at double costs",
+    "does not beat BTC buy-and-hold",
+    "walk-forward not positive",
+    "not positive at double costs without the best coin (PENGUUSDT)",
+    "holdout not run yet"
+   ],
+   "dev_oos": {
+    "trades": 323,
+    "exp_R": 0.00867497037724632,
+    "total_return": -0.050945473817300746,
+    "cagr": -0.034374363445534906,
+    "max_dd_mtm": 0.25824587756802253
+   },
+   "dev_oos_2x_total_return": -0.12468630010460657,
+   "wf_total_R": 9.924769342626014,
+   "wf_total_return": -0.018935824563177217,
+   "holdout_total_return": null,
+   "holdout_2x_total_return": null,
+   "holdout_trades": null,
+   "r4_base": null
+  },
+  "R3": {
+   "name": "Long strong / short faded",
+   "default": "L=14|z=4.0",
+   "status": "NOT_QUALIFIED",
+   "reasons": [
+    "holdout not run yet"
+   ],
+   "dev_oos": {
+    "trades": 168,
+    "exp_R": 0.22055793500459256,
+    "total_return": 0.41066511334546574,
+    "cagr": 0.2588037803124943,
+    "max_dd_mtm": 0.11507300438338974
+   },
+   "dev_oos_2x_total_return": 0.3579129702518158,
+   "wf_total_R": 37.55124631930834,
+   "wf_total_return": 0.42295948030888897,
+   "holdout_total_return": null,
+   "holdout_2x_total_return": null,
+   "holdout_trades": null,
+   "r4_base": null
+  },
+  "R4": {
+   "name": "Volatility-targeted best of R1-R3",
+   "default": "v=0.005",
+   "status": "NOT_QUALIFIED",
+   "reasons": [
+    "holdout not run yet"
+   ],
+   "dev_oos": {
+    "trades": 152,
+    "exp_R": 0.2694428317647203,
+    "total_return": 0.39780666807453713,
+    "cagr": 0.2511164141543556,
+    "max_dd_mtm": 0.08924050912942127
+   },
+   "dev_oos_2x_total_return": 0.3816837025899864,
+   "wf_total_R": 50.21332570451221,
+   "wf_total_return": 0.45511677029606745,
+   "holdout_total_return": null,
+   "holdout_2x_total_return": null,
+   "holdout_trades": null,
+   "r4_base": "R3"
+  },
+  "R5": {
+   "name": "Short the faders",
+   "default": "L=14|K=3|regime=none",
+   "status": "NOT_QUALIFIED",
+   "reasons": [
+    "walk-forward not positive",
+    "not tradeable at EUR100 (min-notional skips)",
+    "holdout not run yet"
+   ],
+   "dev_oos": {
+    "trades": 62,
+    "exp_R": 0.17445371919914504,
+    "total_return": 0.10816347592789777,
+    "cagr": 0.07111969051676748,
+    "max_dd_mtm": 0.06414604400116386
+   },
+   "dev_oos_2x_total_return": 0.10838133168248532,
+   "wf_total_R": -9.614891482550691,
+   "wf_total_return": -0.09469695510842047,
+   "holdout_total_return": null,
+   "holdout_2x_total_return": null,
+   "holdout_trades": null,
+   "r4_base": null
+  }
+ },
+ "benchmarks_dev_oos": {
+  "btc_perp_cagr": -0.018690961385469662,
+  "btc_spot_cagr": 0.05529919948980844,
+  "meme_basket_cagr": -0.6249317794023916
+ },
+ "benchmarks_holdout": null,
+ "note": "PAPER ONLY. Source: research/lab/meme_rotation/dev_results.json, holdout.json; code src/lab/rotation.py; design research/lab/meme_rotation/DESIGN.md."
+}
