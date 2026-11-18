@@ -1,0 +1,4 @@
+# test-only extras (replay tests read the parquet archive)
+-r requirements.txt
+pytest==9.2.0
+pyarrow==26.0.1

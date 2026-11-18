@@ -7,3 +7,10 @@ __pycache__/
 data/clean/
 *.part
 .pytest_cache/
+# paper bot runtime files
+logs/
+state.json
+HALT
+dashboard.html
+dashboard.tmp
+.state.*.tmp
