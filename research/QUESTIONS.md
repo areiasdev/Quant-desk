@@ -2,8 +2,9 @@
 
 ## RADAR - 2026-11-18 (night 1)
 
-1. **TradFi perps in the "top-10 by volume" universe.** Since 2026-02, Binance USDT-M lists
-   stock, ETF, commodity and pre-IPO perps. Unfiltered, they would take 39 top-10 slots across
+1. **TradFi perps in the "top-10 by volume" universe.** Binance USDT-M now lists stock, ETF,
+   commodity and pre-IPO perps (PAXG from 2025-03, XAU from 2025-12, stocks from 2026-01).
+   Unfiltered, they would take 39 top-10 slots across
    10 months (2026-02 .. 2026-11), up to 7 of 10 in a month (2026-08): XAUUSDT, XAGUSDT, CLUSDT (crude oil),
    SNDKUSDT, SKHYNIXUSDT, SOXLUSDT, MUUSDT, KORUUSDT, SPCXUSDT
    (`data/universe_excluded_hits.csv`). RADAR excluded them as "odd products" (crypto desk).
