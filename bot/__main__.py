@@ -57,7 +57,10 @@ def main(argv=None) -> int:
     try:
         from .notify import SettingsError, from_settings
         # telegram.yaml sits next to state.json (the repository folder by default)
-        notifier = from_settings(cfg.state_file.parent / "telegram.yaml")
+        from .strategy import is_approved
+        label = (f"[{cfg.setup_id}]" if is_approved(cfg.setup_id)
+                 else f"[{cfg.setup_id} · SÓ OBSERVAÇÃO, NÃO APROVADO]")
+        notifier = from_settings(cfg.state_file.parent / "telegram.yaml", label=label)
         if notifier is not None:
             bot.j.on_append = notifier.on_record
             logging.getLogger("bot").info("Telegram notifications ON")

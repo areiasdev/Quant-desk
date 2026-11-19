@@ -294,6 +294,13 @@ def build(cfg: C.Config, now: pd.Timestamp | None = None) -> str:
     est = "" if st.get("filters_fetched_at") else (
         "<div class='note'>Mínimos nocionais são ESTIMATE (BTC 100, ETH 20, outros 5 USDT) até à "
         "primeira leitura do exchangeInfo da Binance.</div>")
+    from .strategy import is_approved
+    obs_html = "" if is_approved(cfg.setup_id) else (
+        f"<div class='paper obs'>SÓ OBSERVAÇÃO - o setup {esc(cfg.setup_id)} NÃO foi aprovado "
+        "pelo LAB. Serve para aprender, nunca para dinheiro real.</div>")
+    warn = ("o S16 enfraqueceu no 2.º ano fora da amostra (+0,05R por trade)"
+            if cfg.setup_id == "S16" else
+            f"o {esc(cfg.setup_id)} NÃO passou nos testes do LAB")
     return f"""<!doctype html>
 <html lang="pt">
 <head>
@@ -306,6 +313,7 @@ def build(cfg: C.Config, now: pd.Timestamp | None = None) -> str:
 <body>
 <header class="banner {css}">
   <div class="paper">PAPER ONLY - SÓ PAPEL, SEM DINHEIRO REAL</div>
+  {obs_html}
   <div class="st"><b>{esc(title)}</b> - {esc(detail)}</div>
   <div class="fresh">Dados de {ts(fresh)} · painel gerado {ts(now)} · atualiza a cada 5 min
    · setup {esc(cfg.setup_id)}</div>
@@ -320,8 +328,7 @@ def build(cfg: C.Config, now: pd.Timestamp | None = None) -> str:
 <section><h2>Eventos do Shield</h2><div class="tw">{shield_html}</div></section>
 <section><h2>Universo top-10</h2>{uni_html}</section>
 <footer class="muted">Gerado a partir de logs/ e state.json. Este painel não envia nada a lado
- nenhum e não precisa de internet. Avisos: só papel; o S16 enfraqueceu no 2.º ano fora da amostra
- (+0,05R por trade); mínimos nocionais são estimativas até à primeira leitura ao vivo.</footer>
+ nenhum e não precisa de internet. Avisos: só papel; {warn}; mínimos nocionais são estimativas até à primeira leitura ao vivo.</footer>
 </main>
 </body>
 </html>
@@ -342,6 +349,7 @@ CSS = """
 @media (prefers-color-scheme:dark){:root{--bg:#12151b;--fg:#e8eaee;--mut:#9aa3b2;--card:#1b2029;
 --line:#2c3340;--ok:#5fd08a;--okb:#16301f;--warn:#f0c04a;--warnb:#33290f;--bad:#ff7a6e;
 --badb:#3a1714;--eq:#7fb0ff;--dd:rgba(255,122,110,.25)}}
+.obs{color:var(--bad);font-weight:700}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
 font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:1100px;margin:0 auto;padding:12px 16px 40px}

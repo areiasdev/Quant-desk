@@ -13,11 +13,11 @@ from bot.journal import read_jsonl
 NS_MS = 1_000_000
 
 
-def lab_equivalent_config(root):
+def lab_equivalent_config(root, path=None):
     """The real config.yaml, with Shield's position/halt limits and the minimum notional
     switched off, i.e. what LAB's portfolio() assumes. Only possible from Python (strict=False);
     config.yaml can never loosen Shield."""
-    d = copy.deepcopy(config.raw())
+    d = copy.deepcopy(config.raw(path))
     d["shield"].update(daily_loss_halt=1.0, consecutive_losses_halt=10_000,
                        max_open_positions=10_000, fetch_failures_halt=3, stale_bars=2,
                        max_leverage=3.0)
@@ -34,7 +34,7 @@ def universe_symbols(months):
     return u[u["month"].isin(months)]
 
 
-def lab_trades(start, end):
+def lab_trades(start, end, setup_id="S16"):
     """LAB's S16 backtest (default params, base costs) on the same universe; trades entered in
     [start, end). Returns (trades, portfolio) with LAB's sizing at 110 USDT."""
     from lab.data import load_ctx
@@ -46,7 +46,7 @@ def lab_trades(start, end):
                              freq="M").strftime("%Y-%m").tolist()
     syms = sorted(set(universe_symbols(months)["symbol"]) | {"BTCUSDT"})
     ctx = load_ctx(syms)
-    tr = with_costs(run_setup(ctx, SETUPS["S16"]))
+    tr = with_costs(run_setup(ctx, SETUPS[setup_id]))
     s, e = pd.Timestamp(start, tz="UTC").value, pd.Timestamp(end, tz="UTC").value
     w = tr[(tr["entry_time"] >= s) & (tr["entry_time"] < e)].copy()
     w["closed_in_window"] = w["exit_time"] < e

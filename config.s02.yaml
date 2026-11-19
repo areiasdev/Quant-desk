@@ -1,0 +1,89 @@
+# ===================================================================================
+# OBSERVATION ONLY - S02 IS *NOT* APPROVED. Runs as a SECOND paper bot, beside S16, so the
+# owner can watch a setup that also trades in falling markets. Separate paper money,
+# logs and HALT file. LAB: passed the 4 owner gates but FAILED the extra gates -
+# 68% of its profit came from one coin (MYXUSDT, Sept 2025), year-2 expectancy -0.05R,
+# shorts lost money (-0.11R), max drawdown 63%. Never promote it to real money.
+#   start:      powershell -ExecutionPolicy Bypass -File .\run_bot.ps1 --config config.s02.yaml
+#   dashboard:  .\.venv\Scripts\python.exe -m bot.dashboard --config config.s02.yaml --out dashboard_s02.html --watch
+# ===================================================================================
+# Paper-trading bot configuration (the ONLY file the owner edits).
+# PAPER ONLY: no real orders exist in the code. mode: live just stops the bot with an error.
+# Lines starting with # are comments. Keep the indentation (spaces, not tabs).
+
+mode: paper
+
+# Which LAB setup to paper-trade (src/lab/setups.py). To swap: change id AND params
+# (params must be keys of that setup's defaults), and update monitoring/backtest_reference.
+setup:
+  id: S02                      # Five-day range breakout, trailing exit (long AND short), 4h
+  params: {n: 30, vol: 1.5, exit_n: 10}   # LAB defaults (research/lab/full/S02.json)
+
+account:
+  starting_equity_eur: 100
+  eur_usd_ESTIMATE: 1.10        # ESTIMATE EUR->USDT rate (2026-11), only used to show EUR
+  starting_equity_usdt: 110     # = 100 EUR x 1.10; all bookkeeping is in USDT
+
+risk:
+  risk_per_trade: 0.01          # 1% of realised paper equity between entry and stop
+
+costs:                          # same as LAB (src/lab/engine.py); may only be raised
+  taker_fee: 0.0005             # 0.05% per side
+  maker_fee: 0.0002             # 0.02% (resting limit/target fills)
+  slippage_bp: {majors: 1, other: 3, meme: 10}   # basis points per taker fill
+  majors: [BTCUSDT, ETHUSDT]
+
+exchange:
+  # ESTIMATE until the first live exchangeInfo fetch replaces them (both values are logged
+  # in logs/system.jsonl). Same values as LAB (src/lab/data.py).
+  min_notional_usdt_ESTIMATE: {BTCUSDT: 100, ETHUSDT: 20, default: 5}
+
+shield:                         # may only be made stricter
+  daily_loss_halt: 0.03         # HALT when the UTC day's P&L <= -3%
+  consecutive_losses_halt: 3    # HALT after 3 losing trades in a row
+  stale_bars: 2                 # HALT when the latest closed 1h bar is older than 2 bars
+  fetch_failures_halt: 3        # HALT after 3 failed fetch cycles in a row
+  max_leverage: 3.0             # block trades that take open notional above 3x equity
+  max_open_positions: 3         # block a 4th open position
+
+universe:                       # RADAR's method (src/radar/universe.py), recomputed monthly
+  size: 10
+  candidates: 30
+  trailing_days: 30
+
+polling:
+  wake_after_close_seconds: 30  # wake 30 s after each 1h close ...
+  jitter_seconds: 30            # ... plus a random 0-30 s
+  max_fill_delay_minutes: 15    # later than this after a bar open = entry missed / late exit
+  retry_cycle_seconds: 300      # after a failed fetch cycle, try again after 5 minutes
+  history_1h_bars: 3000         # 1h bars kept per symbol (125 days: SMA200 on 4h needs 800)
+  max_weight_per_minute: 1200   # half of Binance's 2400/min IP limit
+  http_timeout_seconds: 15
+  http_retries: 5               # per request, exponential backoff 1-32 s + jitter
+
+paths:                          # relative to this file's folder
+  logs_dir: logs_s02
+  state_file: state_s02.json
+  halt_file: HALT_s02
+
+# Monitoring thresholds for S02 (observation only), from research/lab/full/S02.json.
+monitoring:
+  weakening_rolling_months: 12
+  weakening_min_exp_R: 0.0        # rolling 12-month expectancy below 0 after costs
+  weakening_max_losing_streak: 30 # walk-forward longest losing streak was 30
+  weakening_max_drawdown: 0.52    # Monte Carlo shuffle 95th-percentile drawdown
+  kill_max_drawdown: 0.60         # stop observing above 60% drawdown (OOS max was 63%)
+  kill_rolling_trades: 100
+  min_trades_for_verdict: 30
+
+# LAB backtest numbers for S02 (OOS 2024-11-01..2026-10-31, base costs, default params).
+backtest_reference:
+  source: research/lab/full/S02.json
+  oos_trades: 967
+  oos_exp_R: 0.268
+  oos_win_rate: 0.325
+  oos_year1_exp_R: 0.618
+  oos_year2_exp_R: -0.050
+  oos_max_dd: 0.626
+  oos_losing_streak: 23
+  trades_per_month: 40.3

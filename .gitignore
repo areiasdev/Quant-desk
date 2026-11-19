@@ -16,3 +16,8 @@ dashboard.tmp
 .state.*.tmp
 # Telegram token: never commit
 telegram.yaml
+# second paper bot (S02, observation only)
+logs_s02/
+state_s02.json
+HALT_s02
+dashboard_s02.html

@@ -294,3 +294,17 @@ O bot pode mandar-te uma mensagem no Telegram quando abre ou fecha uma trade (si
 Se o Telegram falhar, o bot continua a negociar normalmente; a falha fica só registada em `logs/bot.log`.
 
 **Segurança:** o único ficheiro do bot autorizado a enviar dados para fora é `bot/notify.py`, e só para `api.telegram.org`. Os testes `test_no_code_path_can_send_orders_or_use_keys` e `test_post_exception_only_reaches_telegram` garantem isso.
+
+## Segundo bot: S02, SÓ PARA OBSERVAR (não aprovado)
+
+O S02 (rompimento do máximo/mínimo de 5 dias, compra **e** aposta na queda) corre como um **segundo bot**, ao lado do S16, com dinheiro de papel, registos e HALT próprios (`logs_s02/`, `state_s02.json`, `HALT_s02`). Serve para veres o bot a trabalhar em mercados de queda e aprender. **Não passou nos testes do LAB** — 68% do lucro veio de uma moeda num mês, o 2.º ano deu −0,05R por trade, as vendas a descoberto perderam dinheiro e a queda máxima foi 63%. Nunca deve ir para dinheiro real.
+
+Numa **segunda** janela do PowerShell (a do S16 continua aberta):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run_bot.ps1 --config config.s02.yaml
+```
+Painel próprio, noutra janela:
+```powershell
+.\.venv\Scripts\python.exe -m bot.dashboard --config config.s02.yaml --out dashboard_s02.html --watch
+```
+Relatório: `.\.venv\Scripts\python.exe -m bot.report --days 30 --config config.s02.yaml`. Retomar depois de um HALT: `Remove-Item .\HALT_s02`. As mensagens do Telegram deste bot começam por `[S02 · SÓ OBSERVAÇÃO, NÃO APROVADO]`.

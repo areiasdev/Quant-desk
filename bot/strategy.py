@@ -38,6 +38,19 @@ def validate_setup(setup_id: str, params: dict) -> dict:
     return dict(st.defaults, **params)
 
 
+def is_approved(setup_id: str) -> bool:
+    """True only for the setup LAB marked QUALIFIED in research/lab/top_setup.json."""
+    import json
+    from pathlib import Path
+
+    f = Path(__file__).resolve().parent.parent / "research" / "lab" / "top_setup.json"
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return d.get("status") == "QUALIFIED" and d.get("id") == setup_id
+
+
 class Strategy:
     def __init__(self, setup_id: str, params: dict):
         self.id = setup_id

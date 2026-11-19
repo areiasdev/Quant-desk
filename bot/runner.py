@@ -603,6 +603,9 @@ class _CachedInfo:
 def _entry_reason(setup_id):
     if setup_id == "S16":
         return "4h close > SMA50 > SMA200 and settled funding F8 < 0 (first signal of the leg)"
+    if setup_id == "S02":
+        return ("4h close broke the 30-bar (5-day) high (long) or low (short) on >= 1.5x "
+                "average volume; stop 2 ATR, exit on a 10-bar opposite break or after 30 bars")
     return f"{setup_id} signal"
 
 

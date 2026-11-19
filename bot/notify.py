@@ -60,8 +60,14 @@ def _num(x, nd=4):
         return "-"
 
 
-def format_record(name: str, rec: dict, notify_blocks: bool = False) -> str | None:
+def format_record(name: str, rec: dict, notify_blocks: bool = False,
+                  label: str = "") -> str | None:
     """Portuguese message for one journal record, or None if it should not be sent."""
+    text = _format(name, rec, notify_blocks)
+    return f"{label}\n{text}" if text and label else text
+
+
+def _format(name: str, rec: dict, notify_blocks: bool) -> str | None:
     if name == "trades":
         side = "LONG" if rec.get("side", 1) == 1 else "SHORT"
         sym = rec.get("symbol", "?")
@@ -95,10 +101,11 @@ def format_record(name: str, rec: dict, notify_blocks: bool = False) -> str | No
 
 class TelegramNotifier:
     def __init__(self, token: str, chat_id: str, notify_blocks: bool = False,
-                 session=None, timeout: float = 10.0, retries: int = 3,
+                 session=None, label: str = "", timeout: float = 10.0, retries: int = 3,
                  background: bool = True):
         self.token, self.chat_id = token, chat_id
         self.notify_blocks = notify_blocks
+        self.label = label
         self.http = session or requests.Session()
         self.timeout, self.retries = timeout, retries
         self.q: queue.Queue = queue.Queue(maxsize=200)
@@ -109,7 +116,7 @@ class TelegramNotifier:
     # Journal hook: must never raise.
     def on_record(self, name: str, rec: dict) -> None:
         try:
-            text = format_record(name, rec, self.notify_blocks)
+            text = format_record(name, rec, self.notify_blocks, self.label)
             if text:
                 self.send(text)
         except Exception as e:  # noqa: BLE001
@@ -146,11 +153,11 @@ class TelegramNotifier:
         return False
 
 
-def from_settings(path: Path = DEFAULT_FILE) -> TelegramNotifier | None:
+def from_settings(path: Path = DEFAULT_FILE, label: str = "") -> TelegramNotifier | None:
     s = load_settings(path)
     if s is None:
         return None
-    return TelegramNotifier(s["bot_token"], s["chat_id"], s["notify_blocks"])
+    return TelegramNotifier(s["bot_token"], s["chat_id"], s["notify_blocks"], label=label)
 
 
 def find_chats(token: str, session=None) -> list[tuple[str, str]]:
